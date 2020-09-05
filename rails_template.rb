@@ -36,7 +36,7 @@ rails_root = File.expand_path('../../', __FILE__)
 
 %w(
   config/database.sample.yml
-  config/secrets.sample.yml
+  config/secrets.yml
 ).each do |file|
   source = "#{rails_root}/#{file}"
   target = "#{rails_root}/#{file.sub('.sample', '')}"
@@ -57,7 +57,7 @@ run 'echo "config/secrets.yml" >> .gitignore'
 
 run 'cp config/database.yml config/database.sample.yml'
 
-file 'config/secrets.sample.yml', <<-YML
+file 'config/secrets.yml', <<-YML
 development: &dev
   secret_key_base: #{run 'rails secret', capture: true}
   telegram:
@@ -109,7 +109,7 @@ file 'config/locales/en.yml', <<-YML
 en:
   telegram_webhooks:
     start:
-      hi: Hi there!
+      hi: Hi there! I will show new deployments for Feedel (PROD&STG) and csv-builder (STG)
 YML
 
 environment <<-RUBY, env: :production
@@ -131,7 +131,7 @@ file 'spec/requests/telegram_webhooks_spec.rb', <<-RUBY
 RSpec.describe TelegramWebhooksController, telegram_bot: :rails do
   describe '#start!' do
     subject { -> { dispatch_command :start } }
-    it { should respond_with_message 'Hi there!' }
+    it { should respond_with_message 'Hi there7!' }
   end
 end
 RUBY

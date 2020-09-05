@@ -1,4 +1,6 @@
 en:
   telegram_webhooks:
     start:
-      hi: Hi there!
+      hi: Hi there! I will show new deployments for Feedel (PROD&STG) and csv-builder (STG)
+    stop:
+      bye: bye-bye, my sweet ;)
