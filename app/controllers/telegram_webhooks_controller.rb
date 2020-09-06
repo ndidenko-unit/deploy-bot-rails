@@ -35,6 +35,10 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     respond_with :message, text: t('.bye')
   end
 
+  def ping!(*)
+    respond_with :message, text: 'OK'
+  end
+
   def parse_references
     @feedel_stg = HTTParty.get(FEEDEL_STG_URL)
     @feedel_prod = HTTParty.get(FEEDEL_PROD_URL)
@@ -54,7 +58,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     while page['current_commit'].nil?
       page = retry_not_available(FEEDEL_STG_URL)
     end
-    if @feedel_stg['current_commit'][0] == page['current_commit'][0]
+    if @feedel_stg['current_commit'][0] != page['current_commit'][0]
       @feedel_stg = msg_new_deploy(page, name)
     end
   end
