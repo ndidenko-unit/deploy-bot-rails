@@ -109,7 +109,7 @@ file 'config/locales/en.yml', <<-YML
 en:
   telegram_webhooks:
     start:
-      hi: Hi there! I will show new deployments for Feedel (PROD&STG) and csv-builder (STG)
+      hi: Hi there! I will show new deployments for Feedel (PROD&STG) and csv-builder (PROD&STG)
 YML
 
 environment <<-RUBY, env: :production

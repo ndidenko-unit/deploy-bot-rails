@@ -9,7 +9,8 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   BUILDER_PROD_URL = "https://feedel-csv-builder.flippback.com/debug/current_version"
 
   def start!(*)
-    $thread = Thread.new do
+    $threads = []
+    $threads << Thread.new do
 
       respond_with :message, text: t('.hi')
       parse_references
@@ -30,7 +31,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   end
 
   def stop!(*)
-    Thread.kill($thread) if $thread.present?
+    $threads.each { |thread| Thread.kill(thread) }
     respond_with :message, text: t('.bye')
   end
 
@@ -48,16 +49,18 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   end
 
   def check_feedel_stg(name)
+    @retry_count = 0
     page = parse_page(FEEDEL_STG_URL)
     while page['current_commit'].nil?
       page = retry_not_available(FEEDEL_STG_URL)
     end
-    if @feedel_stg['current_commit'][0] != page['current_commit'][0]
+    if @feedel_stg['current_commit'][0] == page['current_commit'][0]
       @feedel_stg = msg_new_deploy(page, name)
     end
   end
 
   def check_feedel_prod(name)
+    @retry_count = 0
     page = parse_page(FEEDEL_PROD_URL)
     while page['current_commit'].nil?
       page = retry_not_available(FEEDEL_PROD_URL)
@@ -68,6 +71,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   end
 
   def check_builder_stg(name)
+    @retry_count = 0
     page = parse_page(BUILDER_STG_URL)
     while page['current_commit'].nil?
       page = retry_not_available(BUILDER_STG_URL)
@@ -78,6 +82,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   end
 
   def check_builder_prod(name)
+    @retry_count = 0
     page = parse_page(BUILDER_PROD_URL)
     while page['current_commit'].nil?
       page = retry_not_available(BUILDER_PROD_URL)
@@ -105,8 +110,11 @@ https://github.com/wishabi/#{name.gsub('-stg', '').gsub('-prod', '')}/commit/#{p
   end
 
   def retry_not_available(url)
-    text = "#{url} not available #{Time.now}"
-    respond_with :message, text: text
+    @retry_count += 1
+    if @retry_count > 2
+      text = "#{url} not available #{Time.now}"
+      respond_with :message, text: text
+    end
     sleep(20)
     HTTParty.get(url)
   rescue
