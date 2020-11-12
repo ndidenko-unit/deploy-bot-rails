@@ -7,6 +7,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   FEEDEL_PROD_URL = "https://feedel.flippback.com/debug/current_version"
   BUILDER_STG_URL = "https://feedel-csv-builder-stg.flippback.com/debug/current_version"
   BUILDER_PROD_URL = "https://feedel-csv-builder.flippback.com/debug/current_version"
+  MATCHMAKER_STG_URL = "https://feedel-matchmaker-stg.flippback.com/debug/current_version"
 
   def start!(*)
     $threads = []
@@ -20,6 +21,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
           check_feedel_prod("feedel-prod")
           check_builder_stg("feedel-csv-builder-stg")
           check_builder_prod("feedel-csv-builder-prod")
+          check_matchmaker_stg("feedel-matchmaker-stg")
           # respond_with :message, text: @_payload['text']
           # binding.pry
         rescue
@@ -44,10 +46,12 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     @feedel_prod = HTTParty.get(FEEDEL_PROD_URL)
     @builder_stg = HTTParty.get(BUILDER_STG_URL)
     @builder_prod = HTTParty.get(BUILDER_PROD_URL)
+    @matchmaker_stg = HTTParty.get(MATCHMAKER_STG_URL)
     respond_with :message, text: 'FEEDEL(STG) current branch: ' + @feedel_stg["current_branch"].first.to_s
     respond_with :message, text: 'FEEDEL(PROD) current branch: ' + @feedel_prod["current_branch"].first.to_s
     respond_with :message, text: 'BUILDER(STG) current branch: ' + @builder_stg["current_branch"].first.to_s
     respond_with :message, text: 'BUILDER(PROD) current branch: ' + @builder_prod["current_branch"].first.to_s
+    respond_with :message, text: 'MATCHMAKER(STG) current branch: ' + @matchmaker_stg["current_branch"].first.to_s
   rescue
     respond_with :message, text: 'Parsing error. Pls, restart me'
   end
@@ -93,6 +97,17 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     end
     if @builder_prod['current_commit'][0] != page['current_commit'][0]
       @builder_prod = msg_new_deploy(page, name)
+    end
+  end
+
+  def check_matchmaker_stg(name)
+    @retry_count = 0
+    page = parse_page(MATCHMAKER_STG_URL)
+    while page['current_commit'].nil?
+      page = retry_not_available(MATCHMAKER_STG_URL)
+    end
+    if @matchmaker_stg['current_commit'][0] != page['current_commit'][0]
+      @matchmaker_stg = msg_new_deploy(page, name)
     end
   end
 
