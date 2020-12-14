@@ -8,6 +8,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   BUILDER_STG_URL = "https://feedel-csv-builder-stg.flippback.com/debug/current_version"
   BUILDER_PROD_URL = "https://feedel-csv-builder.flippback.com/debug/current_version"
   MATCHMAKER_STG_URL = "https://feedel-matchmaker-stg.flippback.com/debug/current_version"
+  MATCHMAKER_PROD_URL = "https://feedel-matchmaker.flippback.com/debug/current_version"
 
   def start!(*)
     $threads = []
@@ -22,6 +23,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
           check_builder_stg("feedel-csv-builder-stg")
           check_builder_prod("feedel-csv-builder-prod")
           check_matchmaker_stg("feedel-matchmaker-stg")
+          check_matchmaker_prod("feedel-matchmaker-prod")
           # respond_with :message, text: @_payload['text']
           # binding.pry
         rescue
@@ -41,17 +43,28 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     respond_with :message, text: 'OK'
   end
 
+  def current_version!(*)
+    respond_with :message, text: 'FEEDEL(STG) current branch: ' + @feedel_stg["current_branch"].first.to_s
+    respond_with :message, text: 'FEEDEL(PROD) current branch: ' + @feedel_prod["current_branch"].first.to_s
+    respond_with :message, text: 'BUILDER(STG) current branch: ' + @builder_stg["current_branch"].first.to_s
+    respond_with :message, text: 'BUILDER(PROD) current branch: ' + @builder_prod["current_branch"].first.to_s
+    respond_with :message, text: 'MATCHMAKER(STG) current branch: ' + @matchmaker_stg["current_branch"].first.to_s
+    respond_with :message, text: 'MATCHMAKER(PROD) current branch: ' + @matchmaker_prod["current_branch"].first.to_s
+  end
+
   def parse_references
     @feedel_stg = HTTParty.get(FEEDEL_STG_URL)
     @feedel_prod = HTTParty.get(FEEDEL_PROD_URL)
     @builder_stg = HTTParty.get(BUILDER_STG_URL)
     @builder_prod = HTTParty.get(BUILDER_PROD_URL)
     @matchmaker_stg = HTTParty.get(MATCHMAKER_STG_URL)
+    @matchmaker_prod = HTTParty.get(MATCHMAKER_PROD_URL)
     respond_with :message, text: 'FEEDEL(STG) current branch: ' + @feedel_stg["current_branch"].first.to_s
     respond_with :message, text: 'FEEDEL(PROD) current branch: ' + @feedel_prod["current_branch"].first.to_s
     respond_with :message, text: 'BUILDER(STG) current branch: ' + @builder_stg["current_branch"].first.to_s
     respond_with :message, text: 'BUILDER(PROD) current branch: ' + @builder_prod["current_branch"].first.to_s
     respond_with :message, text: 'MATCHMAKER(STG) current branch: ' + @matchmaker_stg["current_branch"].first.to_s
+    respond_with :message, text: 'MATCHMAKER(PROD) current branch: ' + @matchmaker_prod["current_branch"].first.to_s
   rescue
     respond_with :message, text: 'Parsing error. Pls, restart me'
   end
@@ -108,6 +121,17 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     end
     if @matchmaker_stg['current_commit'][0] != page['current_commit'][0]
       @matchmaker_stg = msg_new_deploy(page, name)
+    end
+  end
+
+  def check_matchmaker_prod(name)
+    @retry_count = 0
+    page = parse_page(MATCHMAKER_PROD_URL)
+    while page['current_commit'].nil?
+      page = retry_not_available(MATCHMAKER_PROD_URL)
+    end
+    if @matchmaker_prod['current_commit'][0] != page['current_commit'][0]
+      @matchmaker_prod = msg_new_deploy(page, name)
     end
   end
 
