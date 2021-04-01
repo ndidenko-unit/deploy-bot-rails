@@ -9,6 +9,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   BUILDER_PROD_URL = "https://feedel-csv-builder.flippback.com/debug/current_version"
   MATCHMAKER_STG_URL = "https://feedel-matchmaker-stg.flippback.com/debug/current_version"
   MATCHMAKER_PROD_URL = "https://feedel-matchmaker.flippback.com/debug/current_version"
+  MATCHMAKER_PROD_FAILED_JOBS = "https://feedel-matchmaker.flippback.com/debug/failed_jobs"
 
   def start!(*)
     $threads = []
@@ -24,6 +25,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
           check_builder_prod("feedel-csv-builder-prod")
           check_matchmaker_stg("feedel-matchmaker-stg")
           check_matchmaker_prod("feedel-matchmaker-prod")
+          check_matchmaker_failed_jobs
           # respond_with :message, text: @_payload['text']
           # binding.pry
         rescue
@@ -43,6 +45,11 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     respond_with :message, text: 'OK'
   end
 
+  def jobs!
+    @failed_jobs_last_check = Time.now
+    check_matchmaker_failed_jobs(false)
+  end
+
   def current_version!(*)
     respond_with :message, text: 'FEEDEL(STG) current branch: ' + @feedel_stg["current_branch"].first.to_s
     respond_with :message, text: 'FEEDEL(PROD) current branch: ' + @feedel_prod["current_branch"].first.to_s
@@ -59,6 +66,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     @builder_prod = HTTParty.get(BUILDER_PROD_URL)
     @matchmaker_stg = HTTParty.get(MATCHMAKER_STG_URL)
     @matchmaker_prod = HTTParty.get(MATCHMAKER_PROD_URL)
+    @failed_jobs_last_check = Time.now
     respond_with :message, text: 'FEEDEL(STG) current branch: ' + @feedel_stg["current_branch"].first.to_s
     respond_with :message, text: 'FEEDEL(PROD) current branch: ' + @feedel_prod["current_branch"].first.to_s
     respond_with :message, text: 'BUILDER(STG) current branch: ' + @builder_stg["current_branch"].first.to_s
@@ -67,6 +75,20 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
     respond_with :message, text: 'MATCHMAKER(PROD) current branch: ' + @matchmaker_prod["current_branch"].first.to_s
   rescue
     respond_with :message, text: 'Parsing error. Pls, restart me'
+  end
+
+  def check_matchmaker_failed_jobs(auto_mode = true)
+    return if Time.now > Time.parse("19:00") && auto_mode
+    return if Time.now < Time.parse("08:00") && auto_mode
+
+    failed_jobs_count = HTTParty.get(MATCHMAKER_PROD_FAILED_JOBS)["failed_jobs"].to_i
+    return if failed_jobs_count == 0 && auto_mode
+    return if @failed_jobs_last_check > (Time.now - 1.hour) && auto_mode
+
+    str = "MATCHMAKER PROD has #{failed_jobs_count} failed jobs\n
+https://feedel-matchmaker.flippback.com/delayed_job/overview"
+    respond_with :message, text: str
+    @failed_jobs_last_check = Time.now
   end
 
   def check_feedel_stg(name)
