@@ -80,6 +80,7 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   def check_matchmaker_failed_jobs(auto_mode = true)
     return if Time.now > Time.parse("19:00") && auto_mode
     return if Time.now < Time.parse("08:00") && auto_mode
+    return if Time.now.strftime("%M").to_i < 20 && auto_mode
 
     failed_jobs_count = HTTParty.get(MATCHMAKER_PROD_FAILED_JOBS)["failed_jobs"].to_i
     return if failed_jobs_count == 0 && auto_mode
