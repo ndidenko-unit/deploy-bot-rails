@@ -7,9 +7,9 @@ class TelegramWebhooksController < Telegram::Bot::UpdatesController
   FEEDEL_PROD_URL = "https://feedel.flippback.com/debug/current_version"
   BUILDER_STG_URL = "https://feedel-csv-builder-stg.flippback.com/debug/current_version"
   BUILDER_PROD_URL = "https://feedel-csv-builder.flippback.com/debug/current_version"
-  MATCHMAKER_STG_URL = "https://feedel-matchmaker-stg.flippback.com/debug/current_version"
-  MATCHMAKER_PROD_URL = "https://feedel-matchmaker.flippback.com/debug/current_version"
-  MATCHMAKER_PROD_FAILED_JOBS = "https://feedel-matchmaker.flippback.com/debug/failed_jobs"
+  MATCHMAKER_STG_URL = "https://feedel-matchmaker-stg.flippback.com/debug/current_version?env=prod"
+  MATCHMAKER_PROD_URL = "https://feedel-matchmaker.flippback.com/debug/current_version?env=prod"
+  MATCHMAKER_PROD_FAILED_JOBS = "https://feedel-matchmaker.flippback.com/debug/failed_jobs?env=prod"
 
   def start!(*)
     $threads = []
